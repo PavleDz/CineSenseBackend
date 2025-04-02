@@ -27,7 +27,7 @@ def login(data: auth_schema.LoginRequest, response: Response, db: Session = Depe
         key="access_token",
         value=token,
         httponly=True,
-        secure=True,  # promijeni u True ako koristiš HTTPS
+        secure=False,
         samesite="lax",
         max_age=1800
     )
