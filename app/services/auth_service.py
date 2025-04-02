@@ -3,6 +3,7 @@ import datetime
 from passlib.hash import bcrypt
 from fastapi import HTTPException,Request, Depends
 import sqlalchemy as sql
+from sqlalchemy import select
 from dotenv import dotenv_values
 
 import app.database as database
@@ -18,21 +19,18 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(env.get("ACCESS_TOKEN_EXPIRE_MINUTES"))
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.verify(plain_password, hashed_password)
 
-
-def authenticate_user(db, email: str, password: str):
-    user = db.query(models.User).filter(models.User.email == email).first()
+def authenticate_user(db: sql.orm.Session, email: str, password: str):
+    stmt = select(models.User).where(models.User.email == email)
+    user = db.execute(stmt).scalar_one_or_none()
     if not user or not verify_password(password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     return user
-
 
 def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.datetime.utcnow() + datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
-
 
 def get_current_user(request: Request, db: sql.orm.Session = Depends(database.SessionLocal)):
     token = None
@@ -55,7 +53,8 @@ def get_current_user(request: Request, db: sql.orm.Session = Depends(database.Se
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    user = db.query(models.User).filter(models.User.email == email).first()
+    stmt = select(models.User).where(models.User.email == email)
+    user = db.execute(stmt).scalar_one_or_none()
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
 
