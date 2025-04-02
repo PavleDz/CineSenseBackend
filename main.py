@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 import uvicorn
 
 import app.routes.users as users
@@ -9,6 +11,18 @@ import app.routes.user_roles as user_roles
 import app.routes.role_permissions as role_permissions
 
 app = FastAPI()
+
+origins = [
+    "https://cinesense.dzuverovic.me"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,        
+    allow_credentials=True,   
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def root():

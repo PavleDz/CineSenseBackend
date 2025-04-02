@@ -53,6 +53,6 @@ class Permission(Base):
 
 
 if __name__ == "__main__":
-    print("Creating tables from models.py...")
+    print("Creating tables from models.py")
     Base.metadata.create_all(bind=database.engine)
     print("Tables created.")

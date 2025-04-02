@@ -5,6 +5,7 @@ from fastapi import Response
 import app.database as database
 import app.services.auth_service as auth_service
 import app.schemas.auth_schema as auth_schema
+import app.schemas.user_schema as user_schema
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -27,9 +28,13 @@ def login(data: auth_schema.LoginRequest, response: Response, db: Session = Depe
         key="access_token",
         value=token,
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=True,
+        samesite="None",
         max_age=1800
     )
 
     return {"access_token": token}
+
+@router.post("/register", response_model=user_schema.UserRead, status_code=201)
+def register_user(data: user_schema.UserCreate, db: Session = Depends(get_db)):
+    return auth_service.register_user(db, data)

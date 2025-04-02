@@ -8,6 +8,7 @@ from dotenv import dotenv_values
 
 import app.database as database
 import app.models as models
+from app.schemas.user_schema import UserCreate
 
 env = dotenv_values(".env")
 
@@ -59,3 +60,27 @@ def get_current_user(request: Request, db: sql.orm.Session = Depends(database.Se
         raise HTTPException(status_code=404, detail="User not found")
 
     return user
+
+def register_user(db: sql.orm.Session, user_data: UserCreate) -> models.User:
+    existing = db.execute(select(models.User).where(models.User.email == user_data.email)).scalar_one_or_none()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered.")
+
+    hashed_password = bcrypt.hash(user_data.password)
+
+    try:
+        default_role = db.execute(select(models.Role).where(models.Role.name == 'user')).scalar_one()
+        user = models.User(
+            username=user_data.username,
+            email=user_data.email,
+            hashed_password=hashed_password,
+            roles=[default_role]
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return user
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
